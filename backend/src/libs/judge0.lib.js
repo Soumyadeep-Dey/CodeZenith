@@ -2,13 +2,13 @@ import axios from "axios";
 import "dotenv/config";
 
 const headers = {
-    'Authorization' : `Bearer ${process.env.JUDGE0_API_KEY}`,
+    Authorization : `Bearer ${process.env.SULU_API_KEY}`,
 }
 export const getJudge0LanguageId = (language) =>{
     const languageMap = {
-        "PYTHON":71,
-        "JAVA":62,
-        "JAVASCRIPT":63,
+        "PYTHON": 71,
+        "JAVA": 62,
+        "JAVASCRIPT": 63,
     }
 
     return languageMap[language.toUpperCase()];
@@ -16,40 +16,65 @@ export const getJudge0LanguageId = (language) =>{
 
 const sleep = (ms)=> new Promise((resolve)=> setTimeout(resolve , ms))
 
-export const pollBatchResults = async (tokens) =>{
-    while(true){
-        const {data} = await axios.get(`${process.env.JUDGE0_API_URL}/submissions/batch`,{
-            params:{
-                tokens:tokens.join(","),
-                base64_encoded:false,
-            },
-            headers,
-        })
 
-        const results = data.submissions;
+export const pollBatchResults = async (tokens) => {
+    const tokensString = tokens.join(',');
+    const pollUrl = `${process.env.SULU_API_URL}/submissions/batch?tokens=${tokensString}&base64_encoded=false&fields=status,stdout,stderr,expected_output,source_code`;
 
-        const isAllDone = results.every(
-            (r)=> r.status.id !== 1 && r.status.id !== 2
-        )
+    const MAX_RETRIES = 10; // Poll a maximum of 10 times
+    const POLL_INTERVAL = 1500; // Wait 1.5 seconds between polls
 
-        if(isAllDone) return results
-        await sleep(1000)
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const response = await axios.get(pollUrl, {
+                headers: {
+                    'X-RapidAPI-Key': process.env.SULU_API_KEY,
+                    'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+                },
+            });
+
+            const results = response.data.submissions;
+
+            // This is the crucial check. Status ID 1 is "In Queue", 2 is "Processing".
+            // We check if ANY submission is still being processed.
+            const isProcessing = results.some(r => r && (r.status.id === 1 || r.status.id === 2));
+
+            if (!isProcessing) {
+                // If nothing is processing, we have our final results.
+                return results;
+            }
+
+            // If still processing, wait before the next attempt.
+            await sleep(POLL_INTERVAL);
+
+        } catch (error) {
+            console.error(`Error polling results (attempt ${attempt + 1}):, error.response ? error.response.data : error.message`);
+            // Optional: Decide if you want to stop on error or keep trying.
+            // For now, we'll let it continue to the next retry.
+            await sleep(POLL_INTERVAL);
+        }
     }
-}
 
-export const submitbatch = async (submissions) =>{
-    const {data} = await axios.post(`${process.env.JUDGE0_API_URL}/submissions/batch?base64_encoded=false`,{
-        headers, submissions
-    })
+    // If the loop finishes, it means we timed out.
+    console.error(`Polling timed out for tokens: ${tokensString}`);
+    // Return null to be caught by your controller's error handling.
+    return null;
+};
 
-    console.log("Submission Results: ", data)
 
-    return data // [{token} , {token} , {token}]
+export async function submitbatch(
+  submissions
+) {
+  const {data} = await axios.post(
+    `${process.env.SULU_API_URL}/submissions/batch?base64_encoded=false`,
+    {headers, submissions},
+  );
+
+  return data;
 }
 
 export function getLanguageName(languageId){
     const LANGUAGE_NAMES = {
-        74: "TypeScript",
         63: "JavaScript",
         71: "Python",
         62: "Java",

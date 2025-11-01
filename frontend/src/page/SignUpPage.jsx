@@ -31,7 +31,7 @@ const SignUpPage = () => {
     resolver:zodResolver(SignUpSchema)
   })
 
-  const onSubmit = async(date)=>{
+  const onSubmit = async(data)=>{
     console.log(data);
   }
 
@@ -138,9 +138,9 @@ const SignUpPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-full"
-             
+            
             >
-               Sign Up
+               Signup
             </button>
           </form>
 
@@ -158,7 +158,7 @@ const SignUpPage = () => {
 
       {/* Right Side - Image/Pattern */}
       <AuthImagePattern
-      tittle={"Welcome to our platform!"}
+      title={"Welcome to our platform!"}
       subtitle={
         "Sign up to access our platform and start using our services."
       }></AuthImagePattern>
