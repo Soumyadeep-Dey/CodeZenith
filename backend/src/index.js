@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import "dotenv/config";
 
 import authRoutes from "./routes/auth.routes.js";
 import problemRoutes from "./routes/problem.routes.js";
@@ -8,11 +10,22 @@ import executionRoute from "./routes/executeCode.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
 import playlistRoutes from "./routes/playlist.routes.js";
 
-dotenv.config();    
+dotenv.config({
+    path:'./.env'
+}) 
 const app = express();
+app.use(
+    cors({
+      origin: process.env.FRONTEND_URL,
+      credentials: true,
+    })
+  );
 
 app.use(express.json());
 app.use(cookieParser());
+
+const PORT = process.env.PORT || 8000;
+
 
 app.get("/" , (req , res)=>{
     res.send("Hello Guys Welcome to Codezenith🐦‍🔥");
@@ -25,7 +38,7 @@ app.use("/api/v1/submission", submissionRoutes);
 
 app.use("/api/v1/playlist", playlistRoutes);
 
-app.listen(process.env.PORT, () => {
-    console.log("Server is running on port 8080");
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 

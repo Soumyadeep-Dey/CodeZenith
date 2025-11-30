@@ -11,7 +11,8 @@ import {
   Mail,
 } from 'lucide-react'
 import {z} from 'zod'
-import AuthImagePattern from '../components/AuthImagePattern'
+import AuthImagePattern from '../components/AuthImagePattern';
+import { useAuthStore } from '../store/useAuthStore.js';
 
 const LoginSchema = z.object({
   email:z.string().email("Enter a valid email"),
@@ -20,6 +21,7 @@ const LoginSchema = z.object({
 
 const LoginPage = () => {
   
+  const {isLoggingIn , login} = useAuthStore();
   const [showPassword , setShowPassword] = useState(false);
 
   const {
@@ -31,7 +33,12 @@ const LoginPage = () => {
   })
 
   const onSubmit = async(data)=>{
-    console.log(data);
+    try {
+      await login(data);
+      console.log("login data", login);
+    } catch (error) {
+      console.error("Login failed", error);
+    }
   }
 
 
@@ -115,9 +122,16 @@ const LoginPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-full"
-            
+              disabled={isLoggingIn}
             >
-               Login
+               {isLoggingIn ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </form>
 

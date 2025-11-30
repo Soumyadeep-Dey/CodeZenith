@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { db } from "../libs/db.js";
+import "dotenv/config";
 export const authMiddleware = async (req , res , next) =>{
     try {
         const token = req.cookies.jwt;
@@ -15,7 +16,9 @@ export const authMiddleware = async (req , res , next) =>{
         try {
             decoded = jwt.verify(token , process.env.JWT_SECRET);
         } catch (error) {
-            return
+            return res.status(401).json({
+                message:"Unauthorized - Invalid token"
+            });
         }
 
         const user = await db.user.findUnique({
@@ -32,7 +35,7 @@ export const authMiddleware = async (req , res , next) =>{
         });
 
         if(!user){
-            return res.status(401).json({
+            return res.status(404).json({
                 message:"Unauthorized - User not found"
             });
         }
